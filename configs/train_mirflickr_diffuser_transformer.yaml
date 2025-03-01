@@ -1,0 +1,77 @@
+# python scripts/recon/train_learning_based.py -cn train_mirflickr_diffuser_transformer
+defaults:
+  - train_mirflickr_diffuser
+  - _self_
+
+torch_device: 'cuda:2'
+# device_ids: [0, 1]
+device_ids: null
+eval_disp_idx: [0, 1, 3, 4, 8]
+
+# Dataset
+files:
+  dataset: bezzam/DiffuserCam-Lensless-Mirflickr-Dataset-NORM
+  huggingface_dataset: True
+  huggingface_psf: psf.tiff
+  single_channel_psf: True
+  downsample: 2    # factor by which to downsample the PSF, note that for DiffuserCam the PSF has 4x the resolution
+  downsample_lensed: 2   # only used if lensed if measured
+  flipud: True
+  flip_lensed: True
+
+training:
+  batch_size: 3
+  epoch: 25
+  eval_batch_size: 8
+
+reconstruction:
+  method: unrolled_admm
+  unrolled_admm:
+    n_iter: 5
+
+  pre_process: 
+    network : Restormer
+    restormer_params:
+      dim: 24
+      num_blocks: [2, 2, 4, 4]
+      num_refinement_blocks: 4
+      heads: [1, 2, 4, 8]
+      ffn_expansion_factor: 2.66
+  post_process: 
+    network : Restormer
+    restormer_params:
+      dim: 24
+      num_blocks: [2, 2, 4, 4]
+      num_refinement_blocks: 4
+      heads: [1, 2, 4, 8]
+      ffn_expansion_factor: 2.66
+
+  # # 9M
+  # pre_process: 
+  #   network : Restormer
+  #   restormer_params:
+  #     dim: 26
+  #     num_blocks: [2, 3, 3, 4]
+  #     num_refinement_blocks: 4
+  #     heads: [1, 2, 4, 8]
+  #     ffn_expansion_factor: 2.66
+  # post_process: 
+  #   network : Restormer
+  #   restormer_params:
+  #     dim: 26
+  #     num_blocks: [2, 3, 3, 4]
+  #     num_refinement_blocks: 4
+  #     heads: [1, 2, 4, 8]
+  #     ffn_expansion_factor: 2.66
+
+  # # 8.M
+  # pre_process: 
+  #   network : null
+  # post_process: 
+  #   network : Restormer
+  #   restormer_params:
+  #     dim: 30
+  #     num_blocks: [4, 4, 4, 6]
+  #     num_refinement_blocks: 4
+  #     heads: [1, 2, 4, 8]
+  #     ffn_expansion_factor: 2.66

@@ -123,20 +123,36 @@ reconstruction:
   multi_wiener:
     nc: [64, 128, 256, 512, 512]
   pre_process: 
-    network : null  # UnetRes or DruNet or null
-    depth : 2 # depth of each up/downsampling layer. Ignore if network is DruNet
-    nc: null
+    network : null  # UnetRes or DruNet or Restormer or null
     delay: null    # add component after this may epochs
     freeze: null
     unfreeze: null
-  post_process: 
-    network : null  # UnetRes or DruNet or null
+    # -- parameters for UnetRes
     depth : 2 # depth of each up/downsampling layer. Ignore if network is DruNet
     nc: null
+    # -- parameters for Restormer
+    restormer_params:
+      dim: 48
+      num_blocks: [4, 6, 6, 8]
+      num_refinement_blocks: 4
+      heads: [1, 2, 4, 8]
+      ffn_expansion_factor: 2.66
+  post_process: 
+    network : null  # UnetRes or DruNet or Restormer or null
     delay: null    # add component after this may epochs
     freeze: null
     unfreeze: null
     train_last_layer: False
+    # -- parameters for UnetRes
+    depth : 2 # depth of each up/downsampling layer. Ignore if network is DruNet
+    nc: null
+    # -- parameters for Restormer
+    restormer_params:
+      dim: 48
+      num_blocks: [4, 6, 6, 8]
+      num_refinement_blocks: 4
+      heads: [1, 2, 4, 8]
+      ffn_expansion_factor: 2.66
   # number of channels for each compensation layer, list should equal to the number of layers (n_iter)
   # and the last element should be equal to last layer of post_process.nc
   compensation: null  

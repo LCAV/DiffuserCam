@@ -169,10 +169,10 @@ def test_trainable_recon(algorithm):
             psf = torch.rand(1, 32, 64, 3, dtype=torch_type)
             data = torch.rand(2, 1, 32, 64, 3, dtype=torch_type)
 
-            def pre_process(x, param, background=None):
+            def pre_process(x, **kwargs):
                 return x
 
-            def post_process(x, param, residual=None):
+            def post_process(x, **kwargs):
                 return x
 
             recon = algorithm(
@@ -206,10 +206,10 @@ def test_trainable_batch(algorithm):
         data2 = torch.rand(1, 1, 34, 64, 3, dtype=torch_type)
         data2[0, 0, ...] = data1[0, 0, ...]
 
-        def pre_process(x, param, background=None):
+        def pre_process(x, **kwargs):
             return x
 
-        def post_process(x, param, residual=None):
+        def post_process(x, **kwargs):
             return x
 
         recon = algorithm(

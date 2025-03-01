@@ -13,12 +13,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import os
+import gc
 import torch
 from torch import nn
 from lensless.eval.benchmark import benchmark
 from lensless.hardware.trainable_mask import TrainableMask
 from tqdm import tqdm
 from lensless.recon.drunet.network_unet import UNetRes
+from lensless.recon.restormer import Restormer
 from lensless.utils.io import save_image
 from lensless.utils.plot import plot_image
 from lensless.utils.dataset import SimulatedDatasetTrainableMask
@@ -257,6 +259,8 @@ def apply_denoiser(
         Input image.
     noise_level : float or :py:class:`torch.Tensor`
         Noise level in the image within [0, 255].
+    background : :py:class:`torch.Tensor`, optional
+        If provided, use background as noise channel instead of noise level.
     device : str
         Device to use for computation. Can be "cpu" or "cuda".
     mode : str
@@ -284,7 +288,7 @@ def apply_denoiser(
 
     # use background if provided
     # TODO distinguish between integrated background subtraction where it gets passed to the model instead
-    # -- check model.background_subtraction ?
+    # -- check model.background_subtraction ? At the moment, integrated background subtraction isn't supported
     if background is not None:
         # -- pad
         background = background.movedim(-1, -3)
@@ -345,7 +349,7 @@ def get_drunet_function(model, mode="inference"):
         Mode to use for model. Can be "inference" or "train".
     """
 
-    def process(image, noise_level, compensation_output=None, background=None):
+    def process(image, noise_level=10, compensation_output=None, background=None):
         assert compensation_output is None, "Compensation output not supported for legacy models."
         assert background is None, "Background not supported for legacy models."
         x_max = torch.amax(image, dim=(-2, -3), keepdim=True) + 1e-6
@@ -373,7 +377,7 @@ def get_drunet_function_v2(model, mode="inference"):
         Mode to use for model. Can be "inference" or "train".
     """
 
-    def process(image, noise_level, compensation_output=None, background=None):
+    def process(image, noise_level=10, compensation_output=None, background=None):
         x_max = torch.amax(image, dim=(-1, -2, -3, -4), keepdim=True) + 1e-6
         image = apply_denoiser(
             model,
@@ -413,13 +417,16 @@ def measure_gradient(model):
 
 def create_process_network(
     network,
-    depth=4,
     device="cpu",
-    nc=None,
     device_ids=None,
     concatenate_compensation=False,
     background_subtraction=False,
     input_background=False,
+    # unet parameters
+    depth=4,
+    nc=None,
+    # restormer parameters
+    restormer_params=None,
 ):
     """
     Helper function to create a process network.
@@ -456,8 +463,6 @@ def create_process_network(
         process = load_drunet(requires_grad=True)
         process_name = "DruNet"
     elif network == "UnetRes":
-        from lensless.recon.drunet.network_unet import UNetRes
-
         n_channels = 3
         process = UNetRes(
             in_nc=n_channels * 2
@@ -474,6 +479,42 @@ def create_process_network(
             background_subtraction=background_subtraction,
         )
         process_name = "UnetRes_d" + str(depth)
+
+    elif network == "Restormer":
+        assert restormer_params is not None
+        process = Restormer(
+            inp_channels=3,
+            out_channels=3,
+            dim=restormer_params["dim"],
+            num_blocks=restormer_params["num_blocks"],
+            num_refinement_blocks=restormer_params["num_refinement_blocks"],
+            heads=restormer_params["heads"],
+            ffn_expansion_factor=restormer_params["ffn_expansion_factor"],
+            bias=False,
+            LayerNorm_type="BiasFree",  # "WithBias"
+            dual_pixel_task=False,
+        )
+
+        ## -- pretrained
+        # process = Restormer(
+        #     inp_channels=3,
+        #     out_channels=3,
+        #     dim=48,
+        #     num_blocks=[4, 6, 6, 8],
+        #     num_refinement_blocks=4,
+        #     heads=[1, 2, 4, 8],
+        #     ffn_expansion_factor=2.66,
+        #     bias=False,
+        #     LayerNorm_type="BiasFree",  # "WithBias"
+        #     dual_pixel_task=False,
+        # )
+        # # TODO download path from https://drive.google.com/drive/folders/1Qwsjyny54RZWa7zC4Apg7exixLBo4uF0
+        # weights_path = "/root/LenslessPiCam/notebook/real_denoising.pth"
+        # checkpoint = torch.load(weights_path)
+        # process.load_state_dict(checkpoint['params'])
+
+        process_name = "Restormer"
+
     else:
         process = None
         process_name = None
@@ -1360,6 +1401,10 @@ class Trainer:
             self.on_epoch_end(mean_loss, save_pt, epoch + 1, disp=disp)
             if self.lr_step_epoch:
                 self.scheduler.step()
+
+            torch.cuda.empty_cache()
+            gc.collect()
+
 
         self.print(f"Train time [hour] : {(time.time() - start_time) / 3600} h")
 

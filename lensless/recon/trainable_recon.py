@@ -190,9 +190,17 @@ class TrainableReconstructionAlgorithm(ReconstructionAlgorithm, torch.nn.Module)
         if isinstance(process, torch.nn.Module):
             # If the post_process is a torch module, we assume it is a DruNet like network.
             from lensless.recon.utils import get_drunet_function, get_drunet_function_v2
+            from lensless.recon.restormer import get_restormer_function
 
             process_model = process
-            if self._legacy_denoiser:
+            # handle DataParallel case
+            try:
+                process_type = process.module.__class__.__name__
+            except:
+                process_type = process.__class__.__name__
+            if process_type == "Restormer":
+                process_function = get_restormer_function(process_model)
+            elif self._legacy_denoiser:
                 process_function = get_drunet_function(process_model, mode="train")
             else:
                 process_function = get_drunet_function_v2(process_model, mode="train")
@@ -349,13 +357,13 @@ class TrainableReconstructionAlgorithm(ReconstructionAlgorithm, torch.nn.Module)
         # pre process data
         if self.integrated_background_subtraction:
             # use preprocess for background subtraction
-            self._data = self.pre_process(self._data, background)
+            self._data = self.pre_process(self._data, noise_level=background)
         elif self.pre_process is not None and not self.skip_pre:
             # preproc that doesn't do background subtraction
             device_before = self._data.device
             self._data = self.pre_process(
                 self._data,
-                self.pre_process_param,
+                noise_level=self.pre_process_param,
                 background=background if self.input_background else None,
             )
             self._data = self._data.to(device_before)
@@ -383,7 +391,11 @@ class TrainableReconstructionAlgorithm(ReconstructionAlgorithm, torch.nn.Module)
             if self.compensation_branch is not None:
                 compensation_output = self.compensation_branch(compensation_branch_inputs)
 
-            final_est = self.post_process(image_est, self.post_process_param, compensation_output)
+            final_est = self.post_process(
+                image_est,
+                noise_level=self.post_process_param,
+                compensation_output=compensation_output,
+            )
         else:
             final_est = image_est
 
@@ -473,13 +485,13 @@ class TrainableReconstructionAlgorithm(ReconstructionAlgorithm, torch.nn.Module)
         pre_processed_image = None
         if self.integrated_background_subtraction:
             # use preprocess for background subtraction
-            self._data = self.pre_process(self._data, background)
+            self._data = self.pre_process(self._data, noise_level=background)
         elif self.pre_process is not None and not self.skip_pre:
 
             # preproc that doesn't do background subtraction
             self._data = self.pre_process(
                 self._data,
-                self.pre_process_param,
+                noise_level=self.pre_process_param,
                 background=background if self.input_background else None,
             )
         if self.pre_process is not None and output_intermediate:
@@ -514,7 +526,9 @@ class TrainableReconstructionAlgorithm(ReconstructionAlgorithm, torch.nn.Module)
             # apply post process
             if output_intermediate:
                 pre_post_process_image = im.clone()
-            im = self.post_process(im, self.post_process_param, compensation_output)
+            im = self.post_process(
+                im, noise_level=self.post_process_param, compensation_output=compensation_output
+            )
 
         if plot:
             ax = plot_image(self._get_numpy_data(im[0]), ax=ax, gamma=gamma)

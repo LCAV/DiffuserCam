@@ -440,19 +440,20 @@ def train_learned(config):
     pre_proc_delay = config.reconstruction.pre_process.delay
     pre_process, pre_process_name = create_process_network(
         config.reconstruction.pre_process.network,
-        config.reconstruction.pre_process.depth,
-        nc=config.reconstruction.pre_process.nc,
         device=device,
         device_ids=device_ids,
         background_subtraction=config.reconstruction.integrated_background_unetres,
         input_background=config.reconstruction.unetres_input_background,
+        # unet param
+        depth=config.reconstruction.pre_process.depth,
+        nc=config.reconstruction.pre_process.nc,
+        # restormer param
+        restormer_params=config.reconstruction.pre_process.restormer_params,
     )
 
     # Load post-process model
     post_process, post_process_name = create_process_network(
         config.reconstruction.post_process.network,
-        config.reconstruction.post_process.depth,
-        nc=config.reconstruction.post_process.nc,
         device=device,
         device_ids=device_ids,
         concatenate_compensation=(
@@ -460,6 +461,11 @@ def train_learned(config):
             if config.reconstruction.compensation is not None
             else False
         ),
+        # unet param
+        depth=config.reconstruction.post_process.depth,
+        nc=config.reconstruction.post_process.nc,
+        # restormer param
+        restormer_params=config.reconstruction.post_process.restormer_params,
     )
     post_proc_delay = config.reconstruction.post_process.delay
 
@@ -541,6 +547,8 @@ def train_learned(config):
             device_ids=device_ids,
         )
     elif config.reconstruction.integrated_background_subtraction:
+        raise NotImplementedError("Integrated background subtraction not fully integrated yet")
+
         assert config.reconstruction.direct_background_subtraction is False
         assert config.reconstruction.learned_background_subtraction is False
         assert pre_process is None
