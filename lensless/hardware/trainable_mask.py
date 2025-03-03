@@ -86,7 +86,6 @@ class TrainablePSF(TrainableMask):
     """
 
     def __init__(self, initial_psf, grayscale=False, **kwargs):
-
         super().__init__(**kwargs)
         self._psf = torch.nn.Parameter(initial_psf)
         initial_param = [self._psf]
@@ -391,7 +390,13 @@ def prep_trainable_mask(config, psf=None, downsample=None):
                     initial_mask = torch.rand((1, *resolution, 3))
 
             elif config["trainable_mask"]["initial_value"] == "psf":
-                initial_mask = psf.clone()
+
+                if config["reconstruction"]["method"] == "svdeconvnet":
+                    # learnable PSF as part of SVDeconvNet
+                    n_psf = config["reconstruction"]["svdeconvnet"]["K"] ** 2
+                    initial_mask = psf.repeat(n_psf, 1, 1, 1)
+                else:
+                    initial_mask = psf.clone()
 
             # if file ending with "npy"
             elif config["trainable_mask"]["initial_value"].endswith("npy"):

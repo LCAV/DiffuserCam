@@ -98,7 +98,7 @@ you need to:
         admm - Apply ADMM on current measurement.
         unrolled - Apply unrolled ADMM on current measurement.
 
-#. Install Telegram Python API (and other dependencies): ``pip install python-telegram-bot emoji==1.7 pilmoji``.
+#. Install Telegram Python API (and other dependencies): ``pip install python-telegram-bot emoji==1.7 pilmoji pytz``.
 
 #. Make sure ``LenslessPiCam`` is installed on your server and on the Raspberry Pi, and that the display is configured to display images in full screen, as described in :ref:`measurement<Preparing an external monitor for displaying images (remote display)>`.
 

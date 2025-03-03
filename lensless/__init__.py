@@ -30,6 +30,7 @@ try:
     from .recon.unrolled_fista import UnrolledFISTA
     from .recon.trainable_inversion import TrainableInversion
     from .recon.multi_wiener import MultiWiener
+    from .recon.sv_deconvnet import SVDeconvNet
 except Exception:
     pass
 

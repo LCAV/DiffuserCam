@@ -37,7 +37,7 @@ import numpy as np
 import time
 from lensless.utils.image import shift_with_pad
 from lensless.hardware.trainable_mask import prep_trainable_mask
-from lensless import ADMM, UnrolledFISTA, UnrolledADMM, TrainableInversion
+from lensless import ADMM, UnrolledFISTA, UnrolledADMM, TrainableInversion, SVDeconvNet
 from lensless.recon.multi_wiener import MultiWiener
 from lensless.recon.integrated_background_sub import IntegratedBackgroundSub
 from lensless.utils.dataset import (
@@ -228,9 +228,11 @@ def train_learned(config):
                 display_res=config.files.image_res,
                 alignment=config.alignment,
                 bg_snr_range=config.files.background_snr_range,  # TODO check if correct
-                bg_fp=to_absolute_path(config.files.background_fp)
-                if config.files.background_fp is not None
-                else None,
+                bg_fp=(
+                    to_absolute_path(config.files.background_fp)
+                    if config.files.background_fp is not None
+                    else None
+                ),
                 input_snr=config.files.input_snr,
             )
 
@@ -255,9 +257,11 @@ def train_learned(config):
                 simulate_lensless=config.files.simulate_lensless,
                 random_flip=config.files.random_flip,
                 bg_snr_range=config.files.background_snr_range,
-                bg_fp=to_absolute_path(config.files.background_fp)
-                if config.files.background_fp is not None
-                else None,
+                bg_fp=(
+                    to_absolute_path(config.files.background_fp)
+                    if config.files.background_fp is not None
+                    else None
+                ),
                 input_snr=config.files.input_snr,
                 psf_snr=config.files.psf_snr,
             )
@@ -279,9 +283,11 @@ def train_learned(config):
             n_files=config.files.n_files,
             simulation_config=config.simulation,
             bg_snr_range=config.files.background_snr_range,
-            bg_fp=to_absolute_path(config.files.background_fp)
-            if config.files.background_fp is not None
-            else None,
+            bg_fp=(
+                to_absolute_path(config.files.background_fp)
+                if config.files.background_fp is not None
+                else None
+            ),
             force_rgb=config.files.force_rgb,
             simulate_lensless=False,  # in general evaluate on measured (set to False)
             input_snr=config.files.input_snr,
@@ -633,6 +639,21 @@ def train_learned(config):
                 direct_background_subtraction=config.reconstruction.direct_background_subtraction,
                 integrated_background_subtraction=config.reconstruction.integrated_background_subtraction,
             )
+        elif config.reconstruction.method == "svdeconvnet":
+            assert config.trainable_mask.mask_type == "TrainablePSF"
+            assert psf_network is None
+            recon = SVDeconvNet(
+                psf,
+                K=config.reconstruction.svdeconvnet.K,
+                pre_process=pre_process if pre_proc_delay is None else None,
+                post_process=post_process if post_proc_delay is None else None,
+                background_network=background_network,
+                return_intermediate=(
+                    True if config.unrolled_output_factor > 0 or config.pre_proc_aux > 0 else False
+                ),
+                direct_background_subtraction=config.reconstruction.direct_background_subtraction,
+                integrated_background_subtraction=config.reconstruction.integrated_background_subtraction,
+            )
         elif config.reconstruction.method == "multi_wiener":
 
             if config.files.single_channel_psf:
@@ -687,6 +708,9 @@ def train_learned(config):
     if psf_network is not None:
         n_param = sum(p.numel() for p in psf_network.parameters() if p.requires_grad)
         log.info(f"-- PSF network model with {n_param} parameters")
+    if mask is not None:
+        n_param = sum(p.numel() for p in mask.parameters() if p.requires_grad)
+        log.info(f"-- Trainable mask with {n_param} parameters")
 
     log.info(f"Setup time : {time.time() - start_time} s")
     log.info(f"PSF shape : {psf.shape}")

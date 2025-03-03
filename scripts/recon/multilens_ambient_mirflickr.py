@@ -11,6 +11,7 @@ from lensless.utils.image import resize
 import time
 from lensless.recon.model_dict import download_model, load_model
 from huggingface_hub import hf_hub_download
+from lensless.utils.io import load_psf
 
 
 @hydra.main(
@@ -39,27 +40,6 @@ def apply_pretrained(config):
         config_path = os.path.join(model_path, ".hydra", "config.yaml")
         with open(config_path, "r") as stream:
             model_config = yaml.safe_load(stream)
-
-    # load PSF
-    test_set = HFDataset(
-        huggingface_repo=model_config["files"]["dataset"],
-        psf=(
-            model_config["files"]["huggingface_psf"]
-            if "huggingface_psf" in model_config["files"]
-            else None
-        ),
-        split="test",
-        display_res=model_config["files"]["image_res"],
-        rotate=model_config["files"]["rotate"],
-        downsample=model_config["files"]["downsample"],
-        alignment=model_config["alignment"],
-        save_psf=model_config["files"]["save_psf"],
-        simulation_config=model_config["simulation"],
-        force_rgb=model_config["files"].get("force_rgb", False),
-        cache_dir=config.cache_dir,
-    )
-    psf = test_set.psf.to(device)
-    print("Test set size: ", len(test_set))
 
     # load data
     if config.fn is not None:
@@ -127,7 +107,6 @@ def apply_pretrained(config):
             rotate=model_config["files"]["rotate"],
             downsample=model_config["files"]["downsample"],
             alignment=model_config["alignment"],
-            save_psf=model_config["files"]["save_psf"],
             simulation_config=model_config["simulation"],
             force_rgb=model_config["files"].get("force_rgb", False),
             cache_dir=config.cache_dir,
@@ -141,6 +120,41 @@ def apply_pretrained(config):
     max_val = lensless.max()  # TODO use 4095?
     lensless = lensless / max_val
     background = background / max_val
+
+    # load PSF
+    if config.psf is not None:
+        # load PSF from file
+        psf, _ = load_psf(
+            os.path.join(get_original_cwd(), config.psf),
+            shape=lensless.shape,
+            return_float=True,
+            return_bg=True,
+            flip=model_config["files"]["rotate"],
+            flip_ud=False,
+            bg_pix=(0, 15),
+            force_rgb=model_config["files"].get("force_rgb", False),
+        )
+        psf = torch.from_numpy(psf).to(device)
+        print("PSF shape: ", psf.shape)
+    else:
+        test_set = HFDataset(
+            huggingface_repo=model_config["files"]["dataset"],
+            psf=(
+                model_config["files"]["huggingface_psf"]
+                if "huggingface_psf" in model_config["files"]
+                else None
+            ),
+            split="test",
+            display_res=model_config["files"]["image_res"],
+            rotate=model_config["files"]["rotate"],
+            downsample=model_config["files"]["downsample"],
+            alignment=model_config["alignment"],
+            simulation_config=model_config["simulation"],
+            force_rgb=model_config["files"].get("force_rgb", False),
+            cache_dir=config.cache_dir,
+        )
+        psf = test_set.psf.to(device)
+        print("PSF shape: ", psf.shape)
 
     # load model
     if model_name == "admm":
@@ -163,7 +177,7 @@ def apply_pretrained(config):
                 save=False,
                 gamma=None,
                 plot=False,
-                background=background,
+                background=background if config.background_sub else None,
             )
     end_time = time.time()
     avg_time_ms = (end_time - start_time) / n_trials * 1000
@@ -188,16 +202,20 @@ def apply_pretrained(config):
             save_image(res_np, f"{model_name}_{idx}.png")
         else:
             idx = config.idx
-            alignment = test_set.alignment
-            top_left = alignment["top_left"]
-            height = alignment["height"]
-            width = alignment["width"]
-            res_np = img[top_left[0] : top_left[0] + height, top_left[1] : top_left[1] + width]
+            if config.crop:
+                alignment = test_set.alignment
+                top_left = alignment["top_left"]
+                height = alignment["height"]
+                width = alignment["width"]
+                res_np = img[top_left[0] : top_left[0] + height, top_left[1] : top_left[1] + width]
+            else:
+                res_np = img
             save_image(res_np, f"{model_name}_idx{idx}.png")
         if lensed is not None:
             lensed_np = lensed[0].cpu().numpy()
             save_image(lensed_np, f"original_idx{idx}.png")
         save_image(lensless[0].cpu().numpy(), f"lensless_{idx}.png", normalize=False)
+        save_image(psf.squeeze().cpu().numpy(), f"psf.png")
         save_image(background[0].cpu().numpy(), f"background_{idx}.png", normalize=False)
 
 

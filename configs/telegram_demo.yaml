@@ -22,6 +22,7 @@ psf:
   flipud: True
   downsample: 4
 # -- measured PSF
+  fp: null
 # psf:
 #   # https://drive.switch.ch/index.php/s/NdgHlcDeHVDH5ww?path=%2Fpsf
 #   fp: data/psf/tape_rgb_31032023.png

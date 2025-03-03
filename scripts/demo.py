@@ -177,7 +177,7 @@ def demo(config):
 
         else:
 
-            if not config.capture.bayer:
+            if config.capture.bayer:
                 red_gain = config.camera.red_gain
                 blue_gain = config.camera.blue_gain
             else:

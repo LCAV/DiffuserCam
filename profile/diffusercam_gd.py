@@ -1,4 +1,4 @@
-""" Modified from https://github.com/Waller-Lab/DiffuserCam-Tutorial/blob/master/GD.py"""
+"""Modified from https://github.com/Waller-Lab/DiffuserCam-Tutorial/blob/master/GD.py"""
 
 import numpy as np
 import matplotlib.pyplot as plt

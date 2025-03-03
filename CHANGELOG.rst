@@ -37,6 +37,7 @@ Added
 - Add parameterize and peturb to evaluate model adaptation.
 - PSF correction network.
 - Option to add noise to input image or PSF (for robustness experiments).
+- Learnable shift-variant forward model similar to PhoCoLens: https://phocolens.github.io/
 
 
 Changed

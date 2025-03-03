@@ -8,7 +8,9 @@ cache_dir: /dev/shm
 ## - Uncomment to reconstruct from dataset (screen capture)
 idx: 1    # index from test set to reconstruct
 fn: null  # if not null, set local path or download this file from https://huggingface.co/datasets/Lensless/MultiLens-Mirflickr-Ambient/tree/main
+psf: null  # default to dataset PSF
 background_fn: null    
+crop: True    # use alignment of model to crop
 
 ## - Uncomment to reconstruct plush parrot (direct capture)
 # fn: parrot_raw.png 
@@ -44,7 +46,7 @@ model: Unet4M+U5+Unet4M_concat
 
 # # -- for ADMM with fixed parameters (uncomment and comment learning-based methods)
 # model: admm
-# n_iter: 100
+n_iter: 100
 
 device: cuda:0
 n_trials: 1   # to get average inference time

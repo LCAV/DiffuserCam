@@ -737,9 +737,9 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await query.edit_message_text(text=f"Exposure set to {EXPOSURE} seconds.")
 
     # TODO not working with mask
-    # algo = DEFAULT_ALGO
-    # # send query instead of update as it has the message data
-    # await take_picture_and_reconstruct(update, context, algo, query=query)
+    algo = DEFAULT_ALGO
+    # send query instead of update as it has the message data
+    await take_picture_and_reconstruct(update, context, algo, query=query)
     BUSY = False
 
 

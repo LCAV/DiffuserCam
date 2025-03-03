@@ -80,7 +80,7 @@ reconstruction:
   # initialize with Hugging Face model from model_dict, use "hf:camera:dataset:model_name"
   init: null
 
-  # Method: unrolled_admm, unrolled_fista, trainable_inv
+  # Method: unrolled_admm, unrolled_fista, trainable_inv, multi_wiener, svdeconvnet
   method: unrolled_admm
   skip_unrolled: False
 
@@ -119,7 +119,9 @@ reconstruction:
     mu3: 1e-4
     tau: 2e-4
   trainable_inv:
-    K: 1e-4
+    K: 1e-4    # regularization parameter
+  svdeconvnet:
+    K: 3       # KxK number of deconvolution filters
   multi_wiener:
     nc: [64, 128, 256, 512, 512]
   pre_process: 

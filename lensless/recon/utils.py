@@ -669,20 +669,30 @@ class Trainer:
             self.use_mask = True
         else:
             self.use_mask = False
+
         if self.use_mask:
             # save original PSF
-            psf_np = self.mask.get_psf().detach().cpu().numpy()[0, ...]
-            psf_np = psf_np.squeeze()  # remove (potential) singleton color channel
+            psf_np = self.mask.get_psf().detach().cpu().numpy()
             np.save("psf_original.npy", psf_np)
-            fp = "psf_original.png"
-            save_image(psf_np, fp)
-            plot_image(psf_np, gamma=self.gamma)
-            fp_plot = "psf_original_plot.png"
-            plt.savefig(fp_plot)
+            n_psf = psf_np.shape[0]
+            _, ax = plt.subplots(n_psf, 1)
+            for i in range(n_psf):
+                psf_np_i = psf_np[i].squeeze()
+                fp = f"psf_original_{i}.png" if n_psf > 1 else "psf_original.png"
+                save_image(psf_np_i, fp)
+                plot_image(psf_np_i, gamma=self.gamma, ax=ax[i] if n_psf > 1 else ax)
+                if n_psf > 1:
+                    ax[i].axis("off")
+                else:
+                    ax.axis("off")
 
-            if self.use_wandb:
-                wandb.log({"psf": wandb.Image(fp)}, step=0)
-                wandb.log({"psf_plot": wandb.Image(fp_plot)}, step=0)
+                if self.use_wandb and save_every is not None:
+                    log_key = f"psf_{i}" if n_psf > 1 else "psf"
+                    wandb.log({log_key: wandb.Image(fp)}, step=0)
+
+            # save plot
+            fp = "psf_original_PLOT.png"
+            plt.savefig(fp)
 
         self.l1_mask = l1_mask
 
@@ -1383,18 +1393,28 @@ class Trainer:
                 self.mask._optimizer.state_dict(), os.path.join(path, f"mask_optim_epoch{epoch}.pt")
             )
 
-            psf_np = self.mask.get_psf().detach().cpu().numpy()[0, ...]
-            psf_np = psf_np.squeeze()  # remove (potential) singleton color channel
+            psf_np = self.mask.get_psf().detach().cpu().numpy()
             np.save(os.path.join(path, f"psf_epoch{epoch}.npy"), psf_np)
-            fp = os.path.join(path, f"psf_epoch{epoch}.png")
-            save_image(psf_np, fp)
-            plot_image(psf_np, gamma=self.gamma)
-            fp_plot = os.path.join(path, f"psf_epoch{epoch}_plot.png")
-            plt.savefig(fp_plot)
+            n_psf = psf_np.shape[0]
+            _, ax = plt.subplots(n_psf, 1)
+            for i in range(n_psf):
+                psf_np_i = psf_np[i].squeeze()
+                fp = os.path.join(
+                    path, f"psf_epoch{epoch}_{i}.png" if n_psf > 1 else f"psf_epoch{epoch}.png"
+                )
+                save_image(psf_np_i, fp)
+                plot_image(psf_np_i, gamma=self.gamma, ax=ax[i] if n_psf > 1 else ax)
+                if n_psf > 1:
+                    ax[i].axis("off")
+                else:
+                    ax.axis("off")
 
-            if self.use_wandb and epoch != "BEST":
-                wandb.log({"psf": wandb.Image(fp)}, step=epoch)
-                wandb.log({"psf_plot": wandb.Image(fp_plot)}, step=epoch)
+                if self.use_wandb and epoch != "BEST":
+                    log_key = f"psf_{i}" if n_psf > 1 else "psf"
+                    wandb.log({log_key: wandb.Image(fp)}, step=epoch)
+
+            fp = os.path.join(path, f"psf_epoch{epoch}_PLOT.png")
+            plt.savefig(fp)
 
             if epoch == "BEST":
                 # save difference with original PSF
@@ -1402,12 +1422,26 @@ class Trainer:
                 diff = psf_np - psf_original
                 np.save(os.path.join(path, "psf_epochBEST_diff.npy"), diff)
                 diff_abs = np.abs(diff)
-                save_image(diff_abs, os.path.join(path, "psf_epochBEST_diffabs.png"))
-                _, ax = plt.subplots()
-                im = ax.imshow(diff_abs, cmap="gray" if diff_abs.ndim == 2 else None)
-                plt.colorbar(im, ax=ax)
-                ax.set_title("Absolute difference with original PSF")
-                plt.savefig(os.path.join(path, "psf_epochBEST_diffabs_plot.png"))
+
+                _, ax = plt.subplots(n_psf, 1)
+                for i in range(n_psf):
+                    diff_abs_i = diff_abs[i].squeeze()
+                    save_image(
+                        diff_abs_i,
+                        os.path.join(path, f"psf_epochBEST_diffabs_{i}.png")
+                        if n_psf > 1
+                        else os.path.join(path, "psf_epochBEST_diffabs.png"),
+                    )
+                    if n_psf > 1:
+                        ax[i].imshow(diff_abs_i, cmap="gray" if diff_abs.ndim == 2 else None)
+                        ax[i].axis("off")
+                        ax[0].set_title("Absolute difference with original PSF")
+                    else:
+                        ax.imshow(diff_abs_i, cmap="gray" if diff_abs.ndim == 2 else None)
+                        ax.axis("off")
+                        ax.set_title("Absolute difference with original PSF")
+
+                plt.savefig(os.path.join(path, "psf_epochBEST_diffabs_PLOT.png"))
 
         # save optimizer
         if include_optimizer:
