@@ -17,6 +17,7 @@ from lensless.recon.trainable_inversion import TrainableInversion
 from lensless.hardware.trainable_mask import prep_trainable_mask
 import yaml
 from lensless.recon.multi_wiener import MultiWiener
+from lensless import SVDeconvNet
 from huggingface_hub import snapshot_download
 from collections import OrderedDict
 from lensless.utils.dataset import MyDataParallel
@@ -89,6 +90,17 @@ model_dict = {
             "Unet4M+U5+Unet4M_ft_tapecam": "bezzam/diffusercam-mirflickr-unet4M-unrolled-admm5-unet4M-ft-tapecam",
             "Unet4M+U5+Unet4M_ft_tapecam_post": "bezzam/diffusercam-mirflickr-unet4M-unrolled-admm5-unet4M-ft-tapecam-post",
             "Unet4M+U5+Unet4M_ft_tapecam_pre": "bezzam/diffusercam-mirflickr-unet4M-unrolled-admm5-unet4M-ft-tapecam-pre",
+            # comparing with transformers, with ADAMW optimizer (rest with ADAM)
+            "Unet4M+U5+Unet4M_adamw": "bezzam/diffusercam-mirflickr-unet4M-unrolled-admm5-unet4M-adamw",
+            "Unet4M+U5+Unet4M_psfNN_adamw": "bezzam/diffusercam-mirflickr-unet4M-unrolled-admm5-unet4M-psfNN-adamw",
+            "U5+Transformer8M": "bezzam/diffusercam-mirflickr-unrolled-admm5-transformer8M",
+            "Transformer4M+U5+Transformer4M": "bezzam/diffusercam-mirflickr-transformer4M-unrolled-admm5-transformer4M",
+            "Transformer4M+U5+Transformer4M_psfNN": "bezzam/difusercam-mirflickr-transformer4M-unrolled-admm5-transformer4M-psfNN",
+            # (~11.6M param) comparing with SVDeconvNet, with ADAMW optimizer (full resolution images)
+            "Unet6M+U5+Unet6M_fullres": "bezzam/diffusercam-mirflickr-unet4M-unrolled-admm5-unet4M-fullres",
+            "Unet6M+U5+Unet6M_psfNN_fullres": "bezzam/diffusercam-mirflickr-unet4M-unrolled-admm5-unet4M-psfNN-fullres",
+            "SVDecon+UNet8M": "bezzam/diffusercam-mirflickr-svdecon-unet4M",
+            "Unet4M+SVDecon+Unet4M": "bezzam/diffusercam-mirflickr-unet4M-svdecon-unet4M",
         },
         "mirflickr_sim": {
             "Unet4M+U5+Unet4M": "bezzam/diffusercam-mirflickr-sim-unet4M-unrolled-admm5-unet4M",
@@ -205,6 +217,7 @@ model_dict = {
             "Unet4M+U5+Unet4M_direct_sub": "lensless/multilens-mirflickr-ambient-unet4M-unrolled-admm5-unet4M-direct-sub",
             "Unet4M+U5+Unet4M_learned_sub": "lensless/multilens-mirflickr-ambient-unet4M-unrolled-admm5-unet4M-learned-sub",
             "Unet4M+U5+Unet4M_concat": "lensless/multilens-mirflickr-ambient-unet4M-unrolled-admm5-unet4M-concat-ext",
+            "Unet4M+U5+Unet4M_concat_psfNN": "lensless/multilens-mirflickr-ambient-unet4M-unrolled-admm5-unet4M-concat-psfNN",
             "TrainInv+Unet8M": "lensless/multilens-mirflickr-ambient-trainable-inv-unet8M",
             "TrainInv+Unet8M_learned_sub": "lensless/multilens-mirflickr-ambient-trainable-inv-unet8M-learned-sub",
             "Unet4M+TrainInv+Unet4M": "lensless/multilens-mirflickr-ambient-unet4M-trainable-inv-unet4M",
@@ -392,27 +405,37 @@ def load_model(
 
             pre_process, _ = create_process_network(
                 network=config["reconstruction"]["pre_process"]["network"],
+                device=device,
+                input_background=config["reconstruction"].get("unetres_input_background", False),
+                # unetres param
                 depth=config["reconstruction"]["pre_process"]["depth"],
                 nc=config["reconstruction"]["pre_process"]["nc"]
                 if "nc" in config["reconstruction"]["pre_process"].keys()
                 else None,
-                device=device,
-                input_background=config["reconstruction"].get("unetres_input_background", False),
+                # restormer parameters
+                restormer_params=config["reconstruction"]["pre_process"].get(
+                    "restormer_params", None
+                ),
             )
 
         if config["reconstruction"]["post_process"]["network"] is not None:
 
             post_process, _ = create_process_network(
                 network=config["reconstruction"]["post_process"]["network"],
-                depth=config["reconstruction"]["post_process"]["depth"],
-                nc=config["reconstruction"]["post_process"]["nc"]
-                if "nc" in config["reconstruction"]["post_process"].keys()
-                else None,
                 device=device,
                 # get from dict
                 concatenate_compensation=config["reconstruction"]["compensation"][-1]
                 if config["reconstruction"].get("compensation", None) is not None
                 else False,
+                # unetres param
+                depth=config["reconstruction"]["post_process"]["depth"],
+                nc=config["reconstruction"]["post_process"]["nc"]
+                if "nc" in config["reconstruction"]["post_process"].keys()
+                else None,
+                # restormer parameters
+                restormer_params=config["reconstruction"]["post_process"].get(
+                    "restormer_params", None
+                ),
             )
 
             if train_last_layer:
@@ -488,6 +511,25 @@ def load_model(
                 pre_process=pre_process,
             )
             recon.to(device)
+
+        elif config["reconstruction"]["method"] == "svdeconvnet":
+            psf_learned = psf_learned[0]  # remove singleton dimension
+            recon = SVDeconvNet(
+                psf[0].unsqueeze(
+                    0
+                ),  # set one of PSF (just for shape) but will be overwritten later
+                K=config["reconstruction"]["svdeconvnet"]["K"],
+                pre_process=pre_process,
+                post_process=post_process,
+                background_network=background_network,
+                return_intermediate=return_intermediate,
+                direct_background_subtraction=config["reconstruction"].get(
+                    "direct_background_subtraction", False
+                ),
+                integrated_background_subtraction=config["reconstruction"].get(
+                    "integrated_background_subtraction", False
+                ),
+            )
 
     if mask is not None:
         psf_learned = torch.nn.Parameter(psf_learned)

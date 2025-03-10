@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Bezzam"
+  given-names: "Eric"
+  orcid: "https://orcid.org/0000-0003-4837-5031"
+- family-names: "Kashani"
+  given-names: "Sepand"
+  orcid: "https://orcid.org/0000-0002-0735-371X"
+- family-names: "Vetterli"
+  given-names: "Martin"
+  orcid: "https://orcid.org/0000-0002-6122-1216"
+- family-names: "Simeoni"
+  given-names: "Matthieu"
+  orcid: "https://orcid.org/0000-0002-4927-3697"
+title: "LenslessPiCam: A Hardware and Software Platform for Lensless Computational Imaging with a Raspberry Pi"
+doi: doi.org/10.5281/zenodo.8036869
+date-released: 2023-06-14
+url: "https://github.com/LCAV/LenslessPiCam"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Bezzam"
+    given-names: "Eric"
+    orcid: "https://orcid.org/0000-0003-4837-5031"
+  - family-names: "Kashani"
+    given-names: "Sepand"
+    orcid: "https://orcid.org/0000-0002-0735-371X"
+  - family-names: "Vetterli"
+    given-names: "Martin"
+    orcid: "https://orcid.org/0000-0002-6122-1216"
+  - family-names: "Simeoni"
+    given-names: "Matthieu"
+    orcid: "https://orcid.org/0000-0002-4927-3697"
+  doi: "10.21105/joss.04747"
+  journal: "Journal of Open Source Software"
+  pages: 4747
+  number: 86
+  title: "LenslessPiCam: A Hardware and Software Platform for Lensless Computational Imaging with a Raspberry Pi"
+  volume: 8
+  year: 2023

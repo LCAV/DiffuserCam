@@ -148,15 +148,15 @@ Building documentation
    conda activate lensless_docs39
 
    # install dependencies
-   (lensless_docs) pip install -r docs/requirements.txt
+   (lensless_docs39) pip install -r docs/requirements.txt
 
    # build documentation
-   (lensless_docs) python setup.py build_sphinx
+   (lensless_docs39) python setup.py build_sphinx
    # or
-   (lensless_docs) (cd docs && make html)
+   (lensless_docs39) (cd docs && make html)
    
 To rebuild the documentation from scratch:
 
 .. code:: bash
 
-   (lensless_docs) python setup.py build_sphinx -E -a
+   (lensless_docs39) python setup.py build_sphinx -E -a

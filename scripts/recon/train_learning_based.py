@@ -7,23 +7,10 @@
 # #############################################################################
 
 """
-Train unrolled version of reconstruction algorithm.
+Base script for training learned reconstruction approaches.
 
-```
-python scripts/recon/train_learning_based.py
-```
-
-By default it uses the configuration from the file `configs/train_unrolledADMM.yaml`.
-
-To train pre- and post-processing networks, use the following command:
-```
-python scripts/recon/train_learning_based.py -cn train_unrolled_pre_post
-```
-
-To fine-tune the DiffuserCam PSF, use the following command:
-```
-python scripts/recon/train_learning_based.py -cn fine-tune_PSF
-```
+Check out this page for configuration details:
+https://github.com/LCAV/LenslessPiCam/tree/main/configs/train#training-physics-informed-reconstruction-models
 
 
 """

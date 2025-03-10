@@ -65,6 +65,39 @@ We've also written a few Medium articles to guide users through the process
 of building the camera, measuring data with it, and reconstruction.
 They are all laid out in `this post <https://medium.com/@bezzam/a-complete-lensless-imaging-tutorial-hardware-software-and-algorithms-8873fa81a660>`__.
 
+Collection of lensless imaging research
+---------------------------------------
+
+The following works have been implemented in the toolkit:
+
+Reconstruction algorithms:
+
+* ADMM with total variation regularization and 3D support (`source code <https://github.com/LCAV/LenslessPiCam/blob/d0261b4bc79ef05228b135e6898deb4f7793d1aa/lensless/recon/admm.py#L24>`__, `usage <https://github.com/LCAV/LenslessPiCam/blob/main/scripts/recon/admm.py>`__). [1]_
+* Unrolled ADMM (`source code <https://github.com/LCAV/LenslessPiCam/blob/d0261b4bc79ef05228b135e6898deb4f7793d1aa/lensless/recon/unrolled_admm.py#L20>`__, `usage <https://github.com/LCAV/LenslessPiCam/tree/main/configs/train#unrolled-admm>`__). [2]_
+* Unrolled ADMM with compensation branch (`source code <https://github.com/LCAV/LenslessPiCam/blob/d0261b4bc79ef05228b135e6898deb4f7793d1aa/lensless/recon/utils.py#L84>`__, `usage <https://github.com/LCAV/LenslessPiCam/tree/main/configs/train#compensation-branch>`__). [3]_
+* Trainable inversion from Flatnet (`source code <https://github.com/LCAV/LenslessPiCam/blob/d0261b4bc79ef05228b135e6898deb4f7793d1aa/lensless/recon/trainable_inversion.py#L11>`__, `usage <https://github.com/LCAV/LenslessPiCam/tree/main/configs/train#trainable-inversion>`__). [4]_
+* Multi-Wiener deconvolution network (`source code <https://github.com/LCAV/LenslessPiCam/blob/d0261b4bc79ef05228b135e6898deb4f7793d1aa/lensless/recon/multi_wiener.py#L87>`__, `usage <https://github.com/LCAV/LenslessPiCam/tree/main/configs/train#multi-wiener-deconvolution-network>`__). [5]_
+* SVDeconvNet (for learning multi-PSF deconvolution) from PhoCoLens (`source code <https://github.com/LCAV/LenslessPiCam/blob/main/lensless/recon/sv_deconvnet.py#L42>`__, `usage <https://github.com/LCAV/LenslessPiCam/tree/main/configs/train#multi-psf-camera-inversion>`__). [6]_
+* Incorporating pre-processor (`source code <https://github.com/LCAV/LenslessPiCam/blob/d0261b4bc79ef05228b135e6898deb4f7793d1aa/lensless/recon/trainable_recon.py#L52>`__). [7]_
+* Accounting for external illumination(`source code 1 <https://github.com/LCAV/LenslessPiCam/blob/d0261b4bc79ef05228b135e6898deb4f7793d1aa/lensless/recon/trainable_recon.py#L64>`__, `source code 2 <https://github.com/LCAV/LenslessPiCam/blob/d0261b4bc79ef05228b135e6898deb4f7793d1aa/scripts/recon/train_learning_based.py#L458>`__, `usage <https://github.com/LCAV/LenslessPiCam/tree/main/configs/train#multilens-under-external-illumination>`__). [8]_ 
+
+Camera / mask design:
+
+* Fresnel zone aperture mask pattern (`source code <https://github.com/LCAV/LenslessPiCam/blob/d0261b4bc79ef05228b135e6898deb4f7793d1aa/lensless/hardware/mask.py#L823>`__). [9]_ 
+* Coded aperture mask pattern (`source code <https://github.com/LCAV/LenslessPiCam/blob/d0261b4bc79ef05228b135e6898deb4f7793d1aa/lensless/hardware/mask.py#L288>`__). [10]_
+* Near-field Phase Retrieval for designing a high-contrast phase mask (`source code <https://github.com/LCAV/LenslessPiCam/blob/d0261b4bc79ef05228b135e6898deb4f7793d1aa/lensless/hardware/mask.py#L706>`__). [11]_
+* LCD-based camera, i.e. DigiCam (`source code <https://github.com/LCAV/LenslessPiCam/blob/d0261b4bc79ef05228b135e6898deb4f7793d1aa/lensless/hardware/trainable_mask.py#L117>`__). [7]_ 
+
+Datasets (hosted on Hugging Face and downloaded via their API):
+
+* DiffuserCam Lensless MIR Flickr dataset (copy on `Hugging Face <https://huggingface.co/datasets/bezzam/DiffuserCam-Lensless-Mirflickr-Dataset-NORM>`__). [2]_
+* TapeCam MIR Flickr (`Hugging Face <https://huggingface.co/datasets/bezzam/TapeCam-Mirflickr-25K>`__). [7]_ 
+* DigiCam MIR Flickr (`Hugging Face <https://huggingface.co/datasets/bezzam/DigiCam-Mirflickr-SingleMask-25K>`__). [7]_
+* DigiCam MIR Flickr with multiple mask patterns (`Hugging Face <https://huggingface.co/datasets/bezzam/DigiCam-Mirflickr-MultiMask-25K>`__). [7]_ 
+* DigiCam CelebA (`Hugging Face <https://huggingface.co/datasets/bezzam/DigiCam-CelebA-26K>`__). [7]_
+* MultiFocal mask MIR Flickr under external illumination (`Hugging Face <https://huggingface.co/datasets/Lensless/MultiLens-Mirflickr-Ambient>`__). [8]_ Mask fabricated by [12]_
+
+
 Setup 
 -----
 
@@ -86,16 +119,16 @@ the HQ camera sensor (or V2 sensor). Instructions on building the camera
 can be found `here <https://lensless.readthedocs.io/en/latest/building.html>`__.
 
 The software from this repository has to be installed on **both** your
-local machine and the Raspberry Pi. Note that we highly recommend using
-Python 3.9, as some Python library versions may not be available with 
+local machine and the Raspberry Pi. Note that we recommend using
+Python 3.11, as some Python library versions may not be available with 
 earlier versions of Python. Moreover, its `end-of-life <https://endoflife.date/python>`__ 
-is Oct 2025.
+is Oct 2027.
 
 *Local machine setup*
 =====================
 
-Below are commands that worked for our configuration (Ubuntu
-21.04), but there are certainly other ways to download a repository and
+Below are commands that worked for our configuration (Ubuntu 22.04.5 LTS), 
+but there are certainly other ways to download a repository and
 install the library locally.
 
 Note that ``(lensless)`` is a convention to indicate that the virtual
@@ -196,7 +229,7 @@ to them for the idea and making tools/code/data available! Below is some of
 the work that has inspired this toolkit:
 
 * `Build your own DiffuserCam tutorial <https://waller-lab.github.io/DiffuserCam/tutorial>`__.
-* `DiffuserCam Lensless MIR Flickr dataset <https://waller-lab.github.io/LenslessLearning/dataset.html>`__ [1]_. 
+* `DiffuserCam Lensless MIR Flickr dataset <https://waller-lab.github.io/LenslessLearning/dataset.html>`__ [2]_. 
 
 A few students at EPFL have also contributed to this project:
 
@@ -206,10 +239,12 @@ A few students at EPFL have also contributed to this project:
 * Rein Bentdal and David Karoubi: mask fabrication with 3D printing.
 * Stefan Peters: imaging under external illumination.
 
+We also thank the Swiss National Science Foundation for funding this project through the `Open Research Data (ORD) program <https://ethrat.ch/en/eth-domain/open-research-data/>`__.
+
 Citing this work
 ----------------
 
-If you use these tools in your own research, please cite the following:
+If you use this toolkit in your own research, please cite the following:
 
 ::
 
@@ -226,7 +261,66 @@ If you use these tools in your own research, please cite the following:
       journal = {Journal of Open Source Software}
    }
 
+
+The following papers have contributed new approaches to the field of lensless imaging:
+
+* Introducing pre-processor component as part of modular reconstruction (`IEEE Transactions on Computational Imaging <https://arxiv.org/abs/2502.01102>`__ and `IEEE International Conference on Image Processing (ICIP) 2024 <https://arxiv.org/abs/2403.00537>`__):
+
+::
+
+   @ARTICLE{10908470,
+      author={Bezzam, Eric and Perron, Yohann and Vetterli, Martin},
+      journal={IEEE Transactions on Computational Imaging}, 
+      title={Towards Robust and Generalizable Lensless Imaging With Modular Learned Reconstruction}, 
+      year={2025},
+      volume={11},
+      number={},
+      pages={213-227},
+      keywords={Training;Wiener filters;Computational modeling;Transfer learning;Computer architecture;Cameras;Transformers;Software;Software measurement;Image reconstruction;Lensless imaging;modularity;robustness;generalizability;programmable mask;transfer learning},
+      doi={10.1109/TCI.2025.3539448}
+   }
+   
+   @INPROCEEDINGS{10647433,
+      author={Perron, Yohann and Bezzam, Eric and Vetterli, Martin},
+      booktitle={2024 IEEE International Conference on Image Processing (ICIP)}, 
+      title={A Modular and Robust Physics-Based Approach for Lensless Image Reconstruction}, 
+      year={2024},
+      volume={},
+      number={},
+      pages={3979-3985},
+      keywords={Training;Multiplexing;Pipelines;Noise;Cameras;Robustness;Reproducibility of results;Lensless imaging;modular reconstruction;end-to-end optimization},
+      doi={10.1109/ICIP51287.2024.10647433}
+   }
+
+
+* Lensless imaging under external illumination (`IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP) 2025 <https://arxiv.org/abs/2502.01102>`__):
+
+::
+
+   @INPROCEEDINGS{10888030,
+      author={Bezzam, Eric and Peters, Stefan and Vetterli, Martin},
+      booktitle={ICASSP 2025 - 2025 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 
+      title={Let There Be Light: Robust Lensless Imaging Under External Illumination With Deep Learning}, 
+      year={2025},
+      volume={},
+      number={},
+      pages={1-5},
+      keywords={Source separation;Noise;Lighting;Interference;Reconstruction algorithms;Cameras;Optics;Speech processing;Image reconstruction;Standards;lensless imaging;ambient lighting;external illumination;background subtraction;learned reconstruction},
+      doi={10.1109/ICASSP49660.2025.10888030}
+   }
+
 References
 ----------
 
-.. [1] Monakhova, K., Yurtsever, J., Kuo, G., Antipa, N., Yanny, K., & Waller, L. (2019). Learned reconstructions for practical mask-based lensless imaging. Optics express, 27(20), 28075-28090.
+.. [1] Antipa, N., Kuo, G., Heckel, R., Mildenhall, B., Bostan, E., Ng, R., & Waller, L. (2017). DiffuserCam: lensless single-exposure 3D imaging. Optica, 5(1), 1-9.
+.. [2] Monakhova, K., Yurtsever, J., Kuo, G., Antipa, N., Yanny, K., & Waller, L. (2019). Learned reconstructions for practical mask-based lensless imaging. Optics express, 27(20), 28075-28090.
+.. [3] Zeng, T., & Lam, E. Y. (2021). Robust reconstruction with deep learning to handle model mismatch in lensless imaging. IEEE Transactions on Computational Imaging, 7, 1080-1092.
+.. [4] Khan, S. S., Sundar, V., Boominathan, V., Veeraraghavan, A., & Mitra, K. (2020). Flatnet: Towards photorealistic scene reconstruction from lensless measurements. IEEE Transactions on Pattern Analysis and Machine Intelligence, 44(4), 1934-1948.
+.. [5] Li, Y., Li, Z., Chen, K., Guo, Y., & Rao, C. (2023). MWDNs: reconstruction in multi-scale feature spaces for lensless imaging. Optics Express, 31(23), 39088-39101.
+.. [6] Cai, X., You, Z., Zhang, H., Gu, J., Liu, W., & Xue, T. (2024). Phocolens: Photorealistic and consistent reconstruction in lensless imaging. Advances in Neural Information Processing Systems, 37, 12219-12242.
+.. [7] Bezzam, E., Perron, Y., & Vetterli, M. (2025). Towards Robust and Generalizable Lensless Imaging with Modular Learned Reconstruction. IEEE Transactions on Computational Imaging.
+.. [8] Bezzam, E., Peters, S., & Vetterli, M. (2024). Let there be light: Robust lensless imaging under external illumination with deep learning. IEEE International Conference on Acoustics, Speech and Signal Processing.
+.. [9] Wu, J., Zhang, H., Zhang, W., Jin, G., Cao, L., & Barbastathis, G. (2020). Single-shot lensless imaging with fresnel zone aperture and incoherent illumination. Light: Science & Applications, 9(1), 53.
+.. [10] Asif, M. S., Ayremlou, A., Sankaranarayanan, A., Veeraraghavan, A., & Baraniuk, R. G. (2016). Flatcam: Thin, lensless cameras using coded aperture and computation. IEEE Transactions on Computational Imaging, 3(3), 384-397.
+.. [11] Boominathan, V., Adams, J. K., Robinson, J. T., & Veeraraghavan, A. (2020). Phlatcam: Designed phase-mask based thin lensless camera. IEEE transactions on pattern analysis and machine intelligence, 42(7), 1618-1629.
+.. [12] Lee, K. C., Bae, J., Baek, N., Jung, J., Park, W., & Lee, S. A. (2023). Design and single-shot fabrication of lensless cameras with arbitrary point spread functions. Optica, 10(1), 72-80.

@@ -1,0 +1,34 @@
+# python scripts/eval/benchmark_recon.py -cn diffusercam_fullres
+defaults:
+  - defaults
+  - _self_
+
+dataset: HFDataset
+batchsize: 4
+device: "cuda:0"
+
+huggingface:
+  repo: "bezzam/DiffuserCam-Lensless-Mirflickr-Dataset-NORM"
+  psf: psf.tiff
+  image_res: null
+  rotate: False   # if measurement is upside-down
+  alignment: null
+  downsample: 1
+  downsample_lensed: 1
+  flipud: True
+  flip_lensed: True 
+  single_channel_psf: True
+
+algorithms: [
+  # "ADMM",
+
+  # ## comparing LeADMM5 and SVDeconvNet, ADAMW optimizer
+  "hf:diffusercam:mirflickr:Unet6M+U5+Unet6M_fullres",
+  "hf:diffusercam:mirflickr:Unet6M+U5+Unet6M_psfNN_fullres",
+  "hf:diffusercam:mirflickr:SVDecon+UNet8M",
+  "hf:diffusercam:mirflickr:Unet4M+SVDecon+Unet4M",
+]
+
+save_idx: [0, 1, 3, 4, 8]
+n_iter_range: [100]    # for ADMM
+

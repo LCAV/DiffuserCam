@@ -44,6 +44,8 @@ MOCK_MODULES = [
     "datasets",
     "huggingface_hub",
     "cadquery",
+    "wandb",
+    "einops",
 ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()

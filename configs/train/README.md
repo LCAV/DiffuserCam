@@ -1,8 +1,9 @@
 # Training physics-informed reconstruction models
 
+The core training script can be found [here](https://github.com/LCAV/LenslessPiCam/blob/main/scripts/recon/train_learning_based.py), which is used to train physics-informed reconstruction models on various datasets. The script supports different camera inversion methods, pre- and post-processors, and PSF correction. The training script is based on PyTorch.
+
 The following datasets are supported (hyperlinks takes to relevant configuration description).
 By default, the model architecture uses five unrolleed iterations of ADMM for camera inversion, and UNetRes models for the pre-processor post-processor, and PSF correction.
-
 
 - [DiffuserCam](#diffusercam)
     - [Transformer architecture for pre- and post-processors](#transformer-architecture-for-pre--and-post-processors)
@@ -30,28 +31,39 @@ With DiffuserCam, we show how to set different camera inversion methods and neur
 
 The commands below show how to train different camera inversion methods on the DiffuserCam dataset (downsampled by a factor of 2 along each dimension). For a fair comparison, all models use around 8.1M parameters.
 
+### Unrolled ADMM
+With UNetRes models for the pre- and post-processors, and PSF correction.
 ```bash
 # unrolled ADMM
 python scripts/recon/train_learning_based.py -cn diffusercam
+```
 
-# Trainable inversion (FlatNet but with out adversarial loss)
-# -- need to set PSF as trainable
-python scripts/recon/train_learning_based.py -cn diffusercam \
-    reconstruction.method=trainable_inv \
-    reconstruction.psf_network=False \
-    trainable_mask.mask_type=TrainablePSF \
-	trainable_mask.L1_strength=False
-
-# Unrolled ADMM with compensation branch
+### Compensation branch
+Adding compenstation branch to unrolled ADMM to address model mismatch.
+```bash
 # - adjust shapes of pre and post processors
 python scripts/recon/train_learning_based.py -cn diffusercam \
     reconstruction.psf_network=False \
     reconstruction.pre_process.nc=[16,32,64,128] \
     reconstruction.post_process.nc=[16,32,64,128] \
     reconstruction.compensation=[24,64,128,256,400]
+```
 
-# Multi wiener deconvolution network (MWDN) 
-# with PSF correction built into the network
+### Trainable inversion
+FlatNet but without adversarial loss.
+```bash
+# -- need to set PSF as trainable
+python scripts/recon/train_learning_based.py -cn diffusercam \
+    reconstruction.method=trainable_inv \
+    reconstruction.psf_network=False \
+    trainable_mask.mask_type=TrainablePSF \
+	trainable_mask.L1_strength=False
+```
+
+### Multi wiener deconvolution network
+Multi wiener deconvolution network (MWDN) with PSF correction. No pre- and post-processors as the network
+has layers before and after camera inversion.
+```bash
 python scripts/recon/train_learning_based.py -cn diffusercam \
     reconstruction.method=multi_wiener \
     reconstruction.multi_wiener.nc=[32,64,128,256,436] \

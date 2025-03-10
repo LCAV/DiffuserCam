@@ -35,6 +35,13 @@ algorithms: [
   # "hf:diffusercam:mirflickr:Unet4M+U10+Unet4M",
   "hf:diffusercam:mirflickr:Unet4M+U5+Unet4M_psfNN",
 
+  # ## comparing UNetRes and Transformer, ADAMW optimizer
+  # "hf:diffusercam:mirflickr:Transformer4M+U5+Transformer4M",
+  # "hf:diffusercam:mirflickr:Transformer4M+U5+Transformer4M_psfNN",
+  # "hf:diffusercam:mirflickr:U5+Transformer8M",
+  # "hf:diffusercam:mirflickr:Unet4M+U5+Unet4M_adamw",
+  # "hf:diffusercam:mirflickr:Unet4M+U5+Unet4M_psfNN_adamw",
+
   # # -- benchmark PSF error
   # "hf:diffusercam:mirflickr:U5+Unet8M_psf0dB",
   # "hf:diffusercam:mirflickr:U5+Unet8M_psf-5dB",

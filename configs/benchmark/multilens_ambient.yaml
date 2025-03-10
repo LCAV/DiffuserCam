@@ -28,6 +28,7 @@ algorithms: [
   # "hf:multilens:mirflickr_ambient:Unet4M+U5+Unet4M_direct_sub",
   # "hf:multilens:mirflickr_ambient:Unet4M+U5+Unet4M_learned_sub",
   "hf:multilens:mirflickr_ambient:Unet4M+U5+Unet4M_concat",
+  "hf:multilens:mirflickr_ambient:Unet4M+U5+Unet4M_concat_psfNN",
   # "hf:multilens:mirflickr_ambient:TrainInv+Unet8M",
   # "hf:multilens:mirflickr_ambient:TrainInv+Unet8M_learned_sub",
   # "hf:multilens:mirflickr_ambient:Unet4M+TrainInv+Unet4M",
